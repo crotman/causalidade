@@ -1,0 +1,526 @@
+---
+output:
+  slidy_presentation:
+    css: w3c-blue.css
+    fig_caption: yes
+    toc: yes
+    toc_depth: 3
+    code_folding: hide
+    includes:
+      in_header: header.html
+      before_body: doc_prefix.html
+      after_body: doc_suffix.html
+
+bibliography: bibliography.bib
+---
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+
+library(tidyverse)
+library(ggbeeswarm)
+library(ggforce)
+
+```
+
+```{r setup, include=FALSE}
+ 
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE )
+```
+
+```{r, echo=FALSE}
+
+remissivo <<- tibble(palavra = "####")
+
+slide_atual <<- 1
+
+a_r <- function(palavra_add){
+    remissivo <<- remissivo %>% 
+        bind_rows(tibble(palavra = palavra_add, slide = slide_atual))
+
+    str_glue("**{palavra_add}**")
+    
+}
+
+
+escreve_remissivo <- function(){
+    
+    remissivo_final <- remissivo %>% 
+        slice(2:nrow(remissivo)) %>% 
+        mutate(
+            linha = row_number(),
+            link = str_glue("[{palavra}](#({slide}))\n\n")
+        ) %>% 
+        arrange(palavra)
+        
+    str_flatten(remissivo_final$link, "\n\n")
+
+}
+
+
+
+```
+
+# CURSO DE R PARA ANÁLISE DE DADOS - Inferência Causal
+
+# INTRODUÇÃO
+
+## Causalidade
+
+`r slide_atual = slide_atual + 1`
+
+::: {.left style="float:left;width:18%"}
+![](imagens/tidymodels.svg)
+:::
+
+::: {.right style="float:right;width:78%"}
+Tidymodels é um conjunto de bibliotecas que cuida de todos os passos necessários para desenvolver o workflow de seleção e avaliação de modelos de aprendizado estatístico.
+
+O desenvolvimento é financiado pela RStudio e liderado por Max Kuhn, o principal desenvolvedor de uma biblioteca similar mais antiga: caret.
+
+A tidymodels é toda tidy friendly. Essa é uma das diferenças em relação à caret. Ela também é mais completa e possui muito mais funcionalidades.
+
+É possível obter mais informações em [tidymodels.org](https://www.tidymodels.org/)
+:::
+
+## Inferência Causal
+
+`r slide_atual = slide_atual + 1`
+
+É a área de conhecimento que desenvolve métodos para estimar o impacto de eventos e decisões em desfechos de interesse. Isso é feito partindo de um conhecimento tácito a respeito do contexto.
+
+## Correlação x Causalidade
+
+`r slide_atual = slide_atual + 1`
+
+banco central, ladeira, barco a vela
+
+## Dados Experimentais x Dados Observacionais
+
+`r slide_atual = slide_atual + 1`
+
+# PROBABILIDADE E REGRESSÃO
+
+## Experimento aleatório
+
+Um evento sobre cujo desfecho temos incerteza.
+
+Experimento que ao ser repetido sob as mesmas condições observáveis não produz sempre o mesmo resultado.
+
+-   Lançamento de dado
+-   Sorteio de bolinhas azuis e vermelhas de uma urna
+-   Sexo de uma criança ao nascer
+-   Peso de uma criança ao nascer
+-   Lançamentos de dardo em sequência por um atleta
+-   Tempo de vida útil de uma lâmpada
+
+## Espaço amostral
+
+Espaço amostral é o conjunto de resultados possíveis
+
+Experimentos discretos, onde o espaço amostral é enumerável (pode ser colocado em correspondência biunívoca com o conjunto dos naturais):
+
+-   Lançamento de um dado: $\Omega = \{1, 2, 3, 4 ,5 ,6\}$
+-   Sorteio de bolinhas: $\Omega = \{ azul, vermelha \}$
+-   Sexo de uma criança ao nascer: $\Omega = \{masculino, feminino\}$
+
+Experimentos contínuos, onde o espaço amostral é não-enumerável:
+
+-   Peso de uma criança ao nascer: $\Omega = \{x \in \mathbb{R}, x \geq 0 \}$
+
+-   Lançamentos de dardo em sequência por um atleta: $\Omega = \{x: x \in \mathbb{R}, x \geq 0 \}$
+
+-   Tempo de vida útil de uma lâmpada: $\Omega = \{x: x \in \mathbb{R}, x \geq 0 \}$
+
+```{r}
+
+samples <- tibble(
+  sample = runif(n = 1000, min = 0, max = 1 ),
+  type = "Continuous" 
+) %>% 
+  bind_rows(
+    tibble(
+      sample = sample(x = seq(0, by = 0.1, to = 1 ), size = 1000, replace = TRUE ),
+      type = "Discrete" 
+    )
+  )
+
+
+ggplot(samples) +
+  geom_quasirandom(
+    aes(
+      x = sample,
+      y = type,
+    ),
+    color = "darkblue",
+    size = 0.3,
+    alpha = 0.6,
+    groupOnX =  FALSE
+  ) +
+  theme_minimal()
+
+
+
+```
+
+## Probabilidade
+
+Probabilidades resultam de uma distribuição do montante de uma unidade (um montante 1) pelos possíveis eventos do espaço amostral.
+
+Um evento é definido por um subconjunto do espaço amostral.
+
+Um evento simples é representado por um único elemento do espaço amostral
+
+Um evento A do espaço amostral relativo ao lançamento de um dado pode ser definido como o equivalente a um dado ficar com a face 6 voltada para cima após o lançamento. Neste caso $A = \{6\}$
+
+Um evento B pode ser definido como um lançamento resultar em um número par. Neste caso $B = \{2, 4, 6\}$
+
+No caso de um dado, é claro que cada evento simples possível deve receber uma parte igual do "orçamento" de 1. Portanto a probabilidade de cada evento simples é 1/6. $P(A) = \frac{1}{6}$.
+
+![](imagens/prob_discreta.png){width="50%"}
+
+No caso de um espaço amostral contínuo, acontece o mesmo, a unidade é dividida nos elementos do espaço amostral, mas agora conjunto tem infinitos elementos não enumeráveis.
+
+Um evento definido neste espaço engloba um intervalo de pontos. Por exemplo, o evento pode ser o nascimento de crianças de mais de 4kg.
+
+
+![](imagens/prob_continua.png){width="50%"}
+
+
+As probabilidades seguem os seguintes axiomas:
+
+-   $P(\Omega) = 1$
+
+-   Para todo conjunto A, $P(A) \geq 0$
+
+-   Para toda sequência de eventos mutuamente exclusivos $A_1, A_2, ...$ temos $P\left ( \bigcup_{i = 1}^{\infty} A_i\right ) = \sum_{i=1}^\infty \left (P(A_i) \right )$, ou seja, a probabilidade da união de eventos mutuamente exclusivos é igual à soma da probabilidade desses eventos.
+
+Esta é uma definição axiomática, que não fala sobre o significado do valor de probabiidade distribuído pelos elementos.
+
+Queremos um número que reflita a chance de ocorrência de cada evento. 
+
+Esse número pode ser pensado a partir de uma abordagem frequentista, onde a probabilidade é estimada a partir da frequência de ocorrência do evento em um número grande de execuções conhecidas e independentes do experimento aleatório: $f_{}n,a = \frac{n(A)}{n}$
+
+Entretanto, nem sempre é possível conhecer um número grande desfechos para o evento aleatório nas mesmas condições. Neste caso, podemos adotar valores baseados na crença que temos na ocorrência de cada evento.  
+
+
+
+## Probabilidade Condicional
+
+
+O conceito de probabilidade condicional é importantíssimo.
+
+A probabilidade condicional funciona como uma possível restrição ao espaço amostral de um evento B pela ocorrência de um evento A. 
+
+Podemos exemplificar pelo espaço amostral dado pelo resultado do lançamento de um par de dados
+
+```{r}
+
+desfecho_par_dados <- tibble(
+  dado_1 = 1L:6L
+) %>% 
+  crossing(
+    tibble(
+      dado_2 = 1L:6L
+    )    
+  )
+
+
+espaco <- ggplot(desfecho_par_dados) +
+  geom_point(
+    aes(
+      x = dado_1,
+      y = dado_2
+    ),
+    size = 12,
+    shape = 21,
+    color = "darkblue",
+    fill = "darkblue",
+    alpha = 0.2
+  ) +
+  geom_text(
+    aes(
+      x = dado_1,
+      y = dado_2,
+      label = "1/36"
+    )
+  ) +
+  scale_x_continuous(
+    breaks = 1:6,
+    minor_breaks = NULL
+  ) +
+  scale_y_continuous(
+    breaks = 1:6,
+    minor_breaks = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 18)
+  ) + 
+  labs(
+    x = "\nDado 1",
+    y = "Dado 2\n"
+  ) +
+  ggtitle(
+    "Espaço amostral, lançamento par de dados"
+  )
+
+
+espaco
+
+
+```
+
+
+Podemos imaginar o seguinte evento:
+
+A: em cada lançamento o valor do dado é menor ou igual a dois
+
+
+```{r}
+
+
+grafico_a <- ggplot(desfecho_par_dados) +
+  geom_point(
+    aes(
+      x = dado_1,
+      y = dado_2
+    ),
+    size = 12,
+    shape = 21,
+    color = "darkblue",
+    fill = "darkblue",
+    alpha = 0.2
+  ) +
+  geom_text(
+    aes(
+      x = dado_1,
+      y = dado_2,
+      label = "1/36"
+    )
+  ) +
+  scale_x_continuous(
+    breaks = 1:6,
+    minor_breaks = NULL,
+    limits = c(0,7)
+  ) +
+  scale_y_continuous(
+    breaks = 1:6,
+    minor_breaks = NULL,
+    limits = c(0,7)
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 18)
+  ) + 
+  labs(
+    x = "\nDado 1",
+    y = "Dado 2\n"
+  ) +
+  ggtitle(
+    "Espaço amostral, lançamento par de dados"
+  ) + 
+  annotate(
+    "rect",
+    xmin = 0.5,
+    xmax = 2.5,
+    ymin = 0.5,
+    ymax = 2.5,
+    color = "white",
+    fill = "darkred",
+    alpha = 0.2
+  ) +
+  annotate(
+    x = 0.3,
+    y = 1.5,
+    geom = "text",
+    label = "A",
+    color = "darkred"
+  )
+
+grafico_a
+
+```
+
+
+Podemos definir também outro evento:
+
+B = a soma dos lançamentos é 4
+
+
+```{r}
+
+
+grafico_a_b <- grafico_a +
+  annotate(
+    geom = "segment",
+    x = 3.5,
+    y = 0.5,
+    xend = 0.5,
+    yend = 3.5,
+    color = "darkgreen",
+    size = 14,
+    alpha = 0.2
+  ) +
+  annotate(
+    x = 0.3,
+    y = 3.5,
+    geom = "text",
+    label = "B",
+    color = "darkgreen"
+  )
+
+grafico_a_b
+
+
+```
+Neste caso as probabilidades dos eventos são essas:
+
+
+$$P(A) = \frac{4}{36} = \frac{1}{9}$$
+
+$$P(B) = \frac{3}{36} = \frac{1}{12}$$
+
+
+Se quisermos calcular a probabilidade do evento B dado que o evento A ocorreu, ou seja $P(B|A)$, precisamos considerar que partimos de um novo espaço amostral: o espaço amostral onde A acontece.
+
+Ou seja:
+
+$$P(B|A) = \frac{P(A,B)}{P(A)}$$
+
+
+
+## Eventos independentes
+
+
+Dois eventos são independentes quando a ocorrência de um evento não muda a probabilidade de ocorrência do outro evento. Ou seja: $P(A) = P(A|B)$
+
+Os eventos relacionados ao lançamento de um segundo dado são independentes dos eventos correspondentes ao lançamento do primeiro dado.
+
+Se considerarmos os eventos A = dado 1 deu resultado 6 e B = dado 2 deu resultado 6, eles são independentes. 
+
+Um evento não restringe o espaço amostral do outro evento
+
+```{r}
+
+espaço_amostral_independentes = tibble(resultado = 1:6 ) %>% 
+  crossing(
+    dado = c("Dado 1", "Dado 2")
+  )
+
+
+grafico_independentes <- ggplot(espaço_amostral_independentes) +
+  geom_point(
+    aes(
+      x = 1,
+      y = resultado
+    ),
+    size = 12,
+    shape = 21,
+    color = "darkblue",
+    fill = "darkblue",
+    alpha = 0.2
+  ) +
+  geom_text(
+    aes(
+      x = 1,
+      y = resultado,
+      label = "1/6"
+    )
+  ) +
+  scale_y_continuous(
+    breaks = 1:6,
+    minor_breaks = NULL,
+    limits = c(0,7)
+  ) +
+  scale_x_continuous(
+    limits = c(0,2)
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 18)
+  ) + 
+  ggtitle(
+    "Espaço amostral, lançamento par de dados"
+  ) + 
+  geom_segment(
+    data = tibble(
+      x = 1,
+      y = 5.5,
+      xend = 1,
+      yend = 6.5,
+      dado = "Dado 1"
+    ),
+    aes(
+      x = x,
+      xend = xend,
+      y = y,
+      yend = yend
+    ),
+    color = "darkgreen",
+    size = 14,
+    alpha = 0.2
+  ) + 
+  geom_segment(
+    data = tibble(
+      x = 1,
+      y = 5.5,
+      xend = 1,
+      yend = 6.5,
+      dado = "Dado 2"
+    ),
+    aes(
+      x = x,
+      xend = xend,
+      y = y,
+      yend = yend
+    ),
+    color = "darkred",
+    size = 14,
+    alpha = 0.2
+  ) + 
+  facet_wrap(
+    ~dado
+  ) +
+  theme(
+    axis.text.x = element_blank()
+  ) +
+  labs(
+    x = "",
+    y = "Resultado\n"
+  ) +
+  geom_text(
+    data = tibble(
+      x = 0.8,
+      y = 6,
+      dado = "Dado 1"
+    ),
+    aes(
+      x = x,
+      y = y
+    ),
+    color = "darkgreen",
+    label = "A"
+  ) + 
+  facet_wrap(
+    ~dado
+  ) +
+  theme(
+    axis.text.x = element_blank()
+  ) +
+  labs(
+    x = "",
+    y = "Resultado\n"
+  ) 
+  
+
+
+grafico_independentes
+
+```
+
+
+
+
+
+
+
