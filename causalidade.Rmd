@@ -119,7 +119,7 @@ Espaço amostral é o conjunto de resultados possíveis
 
 Experimentos discretos, onde o espaço amostral é enumerável (pode ser colocado em correspondência biunívoca com o conjunto dos naturais):
 
--   Lançamento de um dado: $\Omega = \{1, 2, 3, 4 ,5 ,6\}$
+-   Lançamento de um dado: $\Omega = \{ 1\ pontinho,\ 2\ pontinhos,\ 3\ pontinhos,\ 4\ pontinhos\, \\ 5\ pontinhos,\ 6\ pontinhos\}$
 -   Sorteio de bolinhas: $\Omega = \{ azul, vermelha \}$
 -   Sexo de uma criança ao nascer: $\Omega = \{masculino, feminino\}$
 
@@ -130,6 +130,9 @@ Experimentos contínuos, onde o espaço amostral é não-enumerável:
 -   Lançamentos de dardo em sequência por um atleta: $\Omega = \{x: x \in \mathbb{R}, x \geq 0 \}$
 
 -   Tempo de vida útil de uma lâmpada: $\Omega = \{x: x \in \mathbb{R}, x \geq 0 \}$
+
+
+
 
 ```{r}
 
@@ -164,15 +167,15 @@ ggplot(samples) +
 
 ## Probabilidade
 
-Probabilidades resultam de uma distribuição do montante de uma unidade (um montante 1) pelos possíveis eventos do espaço amostral.
+Probabilidade é uma função $\mathcal{P}: \mathcal{F} \to \mathbb{R}$  que distribui o montante de uma unidade (um montante 1) por subconjuntos que representam eventos do espaço amostral. Estes subconjuntos seguem algumas propriedades que não precisam ser detalhadas aqui, mas existem para garantir as propriedades da probabilidade que veremos adiante.
 
 Um evento é definido por um subconjunto do espaço amostral.
 
 Um evento simples é representado por um único elemento do espaço amostral
 
-Um evento A do espaço amostral relativo ao lançamento de um dado pode ser definido como o equivalente a um dado ficar com a face 6 voltada para cima após o lançamento. Neste caso $A = \{6\}$
+Um evento A do espaço amostral relativo ao lançamento de um dado pode ser definido como o equivalente a um dado ficar com a face 6 voltada para cima após o lançamento. Neste caso $A = \{6\ pontinhos\}$
 
-Um evento B pode ser definido como um lançamento resultar em um número par. Neste caso $B = \{2, 4, 6\}$
+Um evento B pode ser definido como um lançamento resultar em um número par. Neste caso $B = \{2\ pontinhos,\ 4\ pontinhos,\ 6\ pontinhos\}$
 
 No caso de um dado, é claro que cada evento simples possível deve receber uma parte igual do "orçamento" de 1. Portanto a probabilidade de cada evento simples é 1/6. $P(A) = \frac{1}{6}$.
 
@@ -184,6 +187,53 @@ Um evento definido neste espaço engloba um intervalo de pontos. Por exemplo, o 
 
 
 ![](imagens/prob_continua.png){width="50%"}
+
+
+Na figurinha, a densidade de orçamento distribuída é maior perto de 2,8kg, o valor mais frequente para o peso de um recém nascido.
+
+
+A distribuição normal é uma boa aproximação para a distribuição deste orçamento de 1 pelos eventos para muitos casos onde temos um conjunto contínuo de eventos
+
+
+```{r}
+
+quantis <- seq(1, 5, length.out = 100 )
+
+densidades <- dnorm(x =  quantis, mean = 2.8, sd = 0.5)
+
+ggplot(
+  
+) +
+  geom_area(
+    aes(
+      x = quantis,
+      y = densidades
+    ),
+    size = 2,
+    color = "darkblue",
+    fill = "darkblue"
+  ) +
+  theme_minimal() +
+  labs(
+    x = "Peso (kg)",
+    y = ""
+  ) +
+  theme(
+    axis.text.y =  element_blank()
+  )
+
+
+```
+
+
+Um aparato chamado Galton Board mostra fisicamente algo bem parecido com o que vimos:
+
+
+<video width="320" height="240" controls>
+  <source src="imagens/galton.mp4" type="video/mp4">
+</video>
+
+
 
 
 As probabilidades seguem os seguintes axiomas:
@@ -201,7 +251,6 @@ Queremos um número que reflita a chance de ocorrência de cada evento.
 Esse número pode ser pensado a partir de uma abordagem frequentista, onde a probabilidade é estimada a partir da frequência de ocorrência do evento em um número grande de execuções conhecidas e independentes do experimento aleatório: $f_{}n,a = \frac{n(A)}{n}$
 
 Entretanto, nem sempre é possível conhecer um número grande desfechos para o evento aleatório nas mesmas condições. Neste caso, podemos adotar valores baseados na crença que temos na ocorrência de cada evento.  
-
 
 
 ## Probabilidade Condicional
@@ -557,6 +606,75 @@ $$P(B|A) = \frac{P(A,B)}{P(A)}$$,
 então:
 
 $$P(A,B) = P(A) P(B|A)$$
+
+
+
+## Variável aleatória
+
+Mais uma vez consideramos que $\Omega$ é o conjunto de eventos do nosso espaço amostral
+
+Variável aleatória é uma função que atribui número real a cada ponto de $\Omega$ que representa um evento, sendo que estes eventos precisam estar consistentes com a definição de probabilidade apresentada anteriormente e deve ser possível atribuir uma probabilidade a eles.
+
+Ou seja:
+
+$$ X: \Omega \to \mathbb{R}  $$
+
+
+No caso do dado, onde temos $\Omega = \{ 1\ pontinho,\ 2\ pontinhos,\ 3\ pontinhos,\ 4\ pontinhos\, \\ 5\ pontinhos,\ 6\ pontinhos\}$, a variável aleatória mais usual é a função que relaciona o cada evento $\omega$ possível ao número de pontinhos. 
+
+Ou seja, se considerarmos que $\omega_1 = "1\ pontinho\ pra\ cima"$, $X(\omega_1) = 1$
+
+A variável aleatória nos ajuda a ter uma mensuração dos eventos na linguagem dos números reais.
+
+Como agora usamos a ferramenta da Variável Aleatória para relacionar eventos (associados a probabilidades de ocorrência) a números reais, podemos definir o que é o valor esperado dessa variável aleatória, que vai ser um número real.
+
+O valor esperado da variável aleatória X nada mais é que a soma dos possíveis $X(\omega)$, onde $\omega \in \Omega$, ponderada pela probabilidade de ocorrência desses pontos, $P(\omega)$
+
+No caso do nosso dado, temos a situação de uma Variável Aleatória discreta:
+
+$$ E(X) = \sum_{\omega \in \Omega}{P(\omega)X(\omega)}$$
+
+No R:
+
+```{r}
+
+sum((1:6)*(1/6))
+
+```
+
+
+
+
+
+## Lei dos grandes números
+
+
+A lei dos grandes números, nume definição não muito precisa, mas suficiente para os nossos propósitos, diz que a média de uma amostra fica mais próxima da média real da população à medida em que o tamanho da amostra cresce
+
+
+Imagina que temos um dado. Sabemos que a média será a seguinte
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
